@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UPI Fraud Detection</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div id="app" class="max-w-4xl mx-auto mt-10 p-6 bg-white shadow-xl rounded-2xl opacity-0">
+    <h1 class="text-3xl font-bold mb-6 text-center">UPI Fraud Detection Dashboard</h1>
+
+    <!-- Upload Form -->
+    <form action="/" method="POST" enctype="multipart/form-data" class="mb-6">
+      <input type="file" name="file" class="block w-full mb-2 border rounded px-2 py-1"/>
+      <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Upload CSV</button>
+    </form>
+
+    <!-- Flash Messages -->
+    {% with msgs = get_flashed_messages() %}
+      {% if msgs %}
+        <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">{{ msgs[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="flex justify-center gap-4 mb-6">
+      <a href="{{ url_for('train') }}" class="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Train Model</a>
+      <button id="detect-btn" class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Detect Fraud</button>
+    </div>
+
+    <!-- Results & Spinner -->
+    <div id="spinner" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 hidden">
+      <div class="border-8 border-gray-200 border-t-blue-600 rounded-full w-16 h-16 animate-spin"></div>
+    </div>
+    <div id="results" class="mt-6"></div>
+  </div>
+
+  <script src="{{ url_for('static',filename='js/transition.js') }}"></script>
+</body>
+</html>
