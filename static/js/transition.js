@@ -1,55 +1,59 @@
 document.addEventListener('DOMContentLoaded', () => {
   const app = document.getElementById('app');
-  app.classList.add('fade-in');
-
-  // Page transitions (existing)
-  document.querySelectorAll('.transition-button').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.preventDefault();
-      const target = btn.getAttribute('href');
-      app.classList.replace('fade-in','fade-out');
-      setTimeout(() => window.location = target, 500);
-    });
-  });
-
-  // Detect Fraud via AJAX
+  const fileInput = document.getElementById('file-input');
+  const uploadBtn = document.getElementById('upload-btn');
+  const trainBtn  = document.getElementById('train-btn');
   const detectBtn = document.getElementById('detect-btn');
   const spinner   = document.getElementById('spinner');
+  const message   = document.getElementById('message');
   const results   = document.getElementById('results');
 
-  detectBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    results.innerHTML = '';            // clear old
-    spinner.classList.remove('hidden');
+  const showSpinner = () => spinner.classList.remove('hidden');
+  const hideSpinner = () => spinner.classList.add('hidden');
 
-    try {
-      const resp = await fetch('/api/detect');
-      const { alerts } = await resp.json();
-      renderResults(alerts);
-    } catch (err) {
-      results.innerHTML = `<p class="text-red-600">Error during fraud detection.</p>`;
-    } finally {
-      spinner.classList.add('hidden');
+  const postJSON = async (url, data) => {
+    const resp = await fetch(url, data);
+    return resp.json();
+  };
+
+  uploadBtn.addEventListener('click', async () => {
+    if (!fileInput.files.length) return;
+    showSpinner(); message.textContent = '';
+    const form = new FormData(); form.append('file', fileInput.files[0]);
+    const res = await postJSON('/api/upload', { method:'POST', body: form });
+    hideSpinner();
+    message.textContent = res.status === 'uploaded' ? '✅ Uploaded' : res.error;
+  });
+
+  trainBtn.addEventListener('click', async () => {
+    showSpinner(); message.textContent = '';
+    const res = await postJSON('/api/train', { method:'POST' });
+    hideSpinner();
+    message.textContent = res.status === 'trained' ? '✅ Trained' : res.error;
+  });
+
+  detectBtn.addEventListener('click', async () => {
+    showSpinner(); message.textContent = '';
+    const res = await fetch('/api/detect');
+    const data = await res.json();
+    hideSpinner();
+    if (data.error) {
+      message.textContent = data.error;
+      return;
+    }
+    if (!data.alerts.length) {
+      results.innerHTML = '<p class="text-green-700">No fraud detected</p>';
+    } else {
+      let html = '<table class="min-w-full bg-white rounded overflow-hidden shadow"><thead class="bg-gray-200"><tr>' +
+                 '<th>Txn ID</th><th>Status</th></tr></thead><tbody>';
+      data.alerts.forEach(id => {
+        html += `<tr class="bg-red-100"><td>${id}</td><td>Fraud</td></tr>`;
+      });
+      html += '</tbody></table>';
+      results.innerHTML = html;
     }
   });
 
-  function renderResults(alerts) {
-    if (!alerts.length) {
-      results.innerHTML = `<p class="text-green-700 font-semibold">No fraudulent transactions detected.</p>`;
-      return;
-    }
-    let html = `<table class="min-w-full bg-white rounded-lg overflow-hidden shadow">
-      <thead class="bg-gray-200"><tr>
-        <th class="py-3 px-6 text-left">Transaction ID</th>
-        <th class="py-3 px-6 text-left">Status</th>
-      </tr></thead><tbody>`;
-    alerts.forEach(id => {
-      html += `<tr class="border-b border-gray-100 bg-red-100">
-        <td class="py-3 px-6 font-mono text-sm">${id}</td>
-        <td class="py-3 px-6 text-red-700 font-semibold">Fraud</td>
-      </tr>`;
-    });
-    html += `</tbody></table>`;
-    results.innerHTML = html;
-  }
+  // initial fade-in
+  app.classList.add('fade-in');
 });
